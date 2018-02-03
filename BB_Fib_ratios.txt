@@ -1,0 +1,51 @@
+//@version=3
+study("BB Fib ratios [ALMA]",shorttitle="BB Fib ratios [ALMA]",overlay=true)
+length=input(defval=21,minval=1)
+fibratio1 = input(defval=1.618, title="Fibonacci Ratio 1")
+fibratio2 = input(defval=2.618, title="Fibonacci Ratio 2")
+fibratio3 = input(defval=3.618, title="Fibonacci Ratio 3")
+fibratio4 = input(defval=5.618, title="Fibonacci Ratio 4")
+usevwma = input(true, title="Use VWMA as base?")
+src = input(close, title="Price source")
+offset = input(0.7, step=0.05, minval=0, maxval=1)
+sigma = input(4, step=1, minval=1)
+smooth = input(9, title="Hull smooth (0 = off)", step=1, minval=0)
+
+base = usevwma ? vwma(src, length) : alma(src, length, offset, sigma)
+avg = abs(atr(length))
+
+hullma(_src, _length)=>
+    _return = wma((2 * wma(_src, _length / 2)) - wma(_src, _length), round(sqrt(_length)))
+
+color1 = #00FFFF
+color2 = #46D400
+color3 = #AA3800
+color4 = #7F007F
+
+base1 = avg * fibratio1
+base2 = avg * fibratio2
+base3 = avg * fibratio3
+base4 = avg * fibratio4
+
+top4 = smooth > 0 ? hullma(base + base4, smooth) : base + base4
+top3 = smooth > 0 ? hullma(base + base3, smooth) : base + base3
+top2 = smooth > 0 ? hullma(base + base2, smooth) : base + base2
+top1 = smooth > 0 ? hullma(base + base1, smooth) : base + base1
+bottom1 = smooth > 0 ? hullma(base - base1, smooth) : base - base1
+bottom2 = smooth > 0 ? hullma(base - base2, smooth) : base - base2
+bottom3 = smooth > 0 ? hullma(base - base3, smooth) : base - base3
+bottom4 = smooth > 0 ? hullma(base - base4, smooth) : base - base4
+
+t4=plot(top4,transp=0,title="Top 4",color=color4)
+t3=plot(top3,transp=20,title="Top 3",color=color3)
+t2=plot(top2,transp=40,title="Top 2",color=color2)
+t1=plot(top1,transp=60,title="Top 1",color=color1)
+
+b1=plot(bottom1, transp=60, title="Bottom 1",color=color1)
+b2=plot(bottom2, transp=40, title="Bottom 2",color=color2)
+b3=plot(bottom3, transp=20, title="Bottom 3",color=color3)
+b4=plot(bottom4, transp=0, title="Bottom 4",color=color4)
+
+plot(base, style=circles, title="ALMA base", color=purple, transp=0, linewidth=2)
+
+//fill(t4, b4, color=#778899, transp=85, editable=true)
