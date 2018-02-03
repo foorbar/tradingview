@@ -1,0 +1,78 @@
+//@version=2
+study(title="Klinger KAMA", precision=0)
+settings = input(false, type=bool, title="Use 34,55,13?")
+showxo = input(false, type=bool, title="Show 0 crossings?")
+showhist = input(false, type=bool, title="Show histogram?")
+custom_fast = input(21, title="Fast Period")
+custom_slow = input(55, title="Slow Period")
+custom_signal = input(21, title="Signal Period")
+
+offset = input(0.7, step=0.05, minval=0.1, maxval=1)
+sigma = input(6, step=1, minval=1)
+
+def_fast = 34
+def_slow = 55
+def_signal = 13
+
+fastp = settings ? def_fast : custom_fast
+slowp = settings ? def_slow : custom_slow
+signalp = settings ? def_signal : custom_signal
+
+//KAMA
+kama(_src, _len)=>
+    erp = 10
+    fastMA = 2
+    slowMA = _len
+    change = abs(_src - _src[erp])
+    volatility = sum(abs(_src - _src[1]), erp)
+    er = change/volatility
+    fastAlpha = (2/(fastMA+1))
+    slowAlpha = (2/(slowMA+1))
+    sc = pow( er * (fastAlpha - slowAlpha ) + slowAlpha, 2)
+    kama = nz(kama[1]) + sc * (_src - nz(kama[1]))
+//KAMA
+
+sv = change(close,1) > 0 ? volume : -volume
+fast = alma(sv, fastp, offset, sigma)
+slow = kama(sv, slowp)
+kvo_line = fast - slow
+sig = alma(kvo_line, signalp, offset, sigma)
+hist = kvo_line - sig
+
+baseline = 0
+crimson = #DC143C
+steelblue = #4682B4
+forestgreen = #228B22
+darkgray = #A9A9A9
+darkorange = #FF8C00
+cyan = #00FFFF
+orange_red = #FF4500
+
+abovezero = crossover(kvo_line, 0)
+belowzero = crossunder(kvo_line, 0)
+isnegative = kvo_line < 0
+ispositive = kvo_line >= 0
+
+isstrong = change(kvo_line,1) > 0
+isweak = change(kvo_line,1) <= 0
+
+histstrong = change(hist,1) > 0
+histweak = change(hist,1) <= 0
+histnegative = hist < 0
+histpositive = hist >= 0
+
+kvo_color = histnegative and histstrong ? maroon : histnegative and histweak ? crimson : histpositive and histstrong ? lime : forestgreen
+
+kvo = kvo_line
+hcolor = hist > 0 ? lime : maroon
+xcolor = kvo_line < 0 ? crimson : forestgreen
+crossing_u = crossover(kvo_line, 0)
+crossing_d = crossunder(kvo_line, 0)
+
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(showhist ? hist : na, color = kvo_color, transp=0, linewidth=4, title="Klinger Histogram", editable=true, style=histogram)
+plot(kvo, color = xcolor, transp=0, linewidth=2, title="Klinger Volume", editable=true, style=line)
+plot(sig, color = darkorange, transp=0, linewidth=2, title="Signal", editable=true)
+
+plotshape(showxo ? crossing_u : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(showxo ? crossing_d : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
