@@ -1,0 +1,40 @@
+//@version=3
+study(title="PP-VWMA", precision=2)
+shortlen = input(8, minval=1, title="Short Lenght")
+longlen = input(34, minval=1, title="Long Lenght")
+signallen = input(13, minval=1, title="Signal (ALMA)")
+smooth = input(0, title="ALMA smooth", minval=0, maxval=5, step=1)
+showhist = input(false, type=bool, title="Show Histogram?")
+showxo = input(false, title="Show crossings?")
+
+hullma(_src, _length)=>
+    _return = wma((2 * wma(_src, _length / 2)) - wma(_src, _length), round(sqrt(_length)))
+
+price = close
+offset = 0.85
+sigma = 6
+short = vwma(price, shortlen)
+long = vwma(price, longlen)
+osc_line = 100 * (short - long) / long
+osc = smooth > 0 ? alma(osc_line, smooth, offset, sigma) : osc_line
+
+osc_signal = alma(osc, signallen, offset, sigma)
+osc_hist = osc - osc_signal
+
+forestgreen = #228B22
+crimson = #DC143C
+darkorange = #FF8C00
+
+belowsignal = osc <= osc_signal
+ppocolorh = belowsignal and osc_hist >= osc_hist[1] ? maroon : belowsignal and osc_hist < osc_hist[1] ? crimson : osc_hist < osc_hist[1] ? forestgreen : lime
+osc_color = belowsignal ? crimson : forestgreen
+crossing_u = crossover(osc, osc_signal)
+crossing_d = crossunder(osc, osc_signal)
+
+plot(showhist ? osc_hist : na, color=ppocolorh, style=histogram, linewidth=4, transp=0, editable=false, title="Histogram")
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(osc, color=osc_color, linewidth=2, transp=0, style=line, editable=true, title="PP-VWMA")
+plot(osc_signal, color=darkorange, linewidth=2, transp=0, style=line, editable=true, title="PP-VWMA Signal")
+
+plotshape(showxo ? crossing_u : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(showxo ? crossing_d : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
