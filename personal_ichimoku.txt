@@ -1,0 +1,126 @@
+//@version=3
+
+study(title="Ichimoku + ALMA + BB", overlay=true, precision=0)
+
+//tenkanSen = input(8, minval=1, title="Tenkan Sen")
+tenkanSen = 8
+//kijunSen = input(34, minval=1, title="Kijun Sen")
+kijunSen = 34
+//chikouSen = input(8, minval=1, title="Chikou Sen")
+chikouSen = 13
+//senkou = input(55, minval=1)
+senkou = 55
+//displacement = input(21, minval=1)
+displacement = 21
+chikou_d = input(false, title="Display Chikou?")
+almaxo = input(false, title="Show ALMA Crossings?")
+ma1l = input(21, minval=1, title="ALMA MA 1")
+ma2l = input(89, minval=1, title="ALMA MA 2")
+ma3l = input(144, minval=1, title="ALMA MA 3")
+masterxo = input(false, title="Show Death/Golden XO")
+display_ma=input(false, "Display MAs?", type=bool)
+display_bb=input(false, "Display BBs?", type=bool)
+new_bb = input(true, "Display mod BB?", type=bool)
+display_bitmex=input(false, "Display XBT?", type=bool)
+
+coinbase = security("COINBASE:BTCUSD", period, close)
+bitstamp = security("BITSTAMP:BTCUSD", period, close)
+//index = avg(coinbase, bitstamp)
+aids18 = security("BITMEX:XBTH18", period, close)
+index = alma(aids18, 3, 0.9, 6)
+//offset = 0.85
+//sigma = 6
+offset = input(0.85, title="ALMA offset", step=0.05)
+sigma = input(6, title="ALMA sigma", step=1)
+
+hullma(_src, _length)=>
+    _return = wma((2 * wma(_src, _length / 2)) - wma(_src, _length), round(sqrt(_length)))
+
+//====BB====
+bbcolor = #C0C0C0
+bb_smooth = 4
+bb_mid = new_bb ? alma(close, 34, offset, sigma) : sma(close, 20)
+dev = new_bb ? 2.0 * stdev(close, 34) : 2.0 * stdev(close, 20)
+//bb_top = new_bb ? alma(bb_mid + dev, bb_smooth, offset, sigma) : bb_mid + dev
+bb_top = bb_mid + dev
+//bb_low = new_bb ? alma(bb_mid - dev, bb_smooth, offset, sigma) : bb_mid - dev
+bb_low = bb_mid - dev
+//====BB====
+darkorange = #FF8C00
+
+donchian(len) => avg(lowest(len), highest(len))
+tenkan = donchian(tenkanSen)
+kijun = donchian(kijunSen)
+chikouline = alma(hl2, chikouSen, 0.2, 1)
+//chikouline = hullma(hl2, 25)
+senkouA = avg(tenkan, kijun)
+senkouB = donchian(senkou)
+
+lightgreen = #90EE90
+price = #FF00FF
+senkoub_color = #FA8072
+spanColor = senkouA>=senkouB ? lightgreen : senkoub_color
+
+p1 = plot(senkouA, title = 'Senkou Span A', offset = displacement, color=spanColor, transp=35, linewidth=1, editable=false)
+p2 = plot(senkouB, title = 'Senkou Span B', offset = displacement, color=spanColor, transp=35, linewidth=1, editable=false)
+fill(p1, p2, color = senkouA > senkouB ? lightgreen : senkoub_color, transp=85, title="Senkou fill", editable=false)
+
+plot(chikou_d ? chikouline : na, title='Chikou Span', linewidth=2, offset=-displacement, color=darkorange, transp=0, editable=true)
+
+//display_bb
+plot(display_bb ? bb_top : na, color=bbcolor, linewidth=2, editable=false, transp=0)
+plot(display_bb ? bb_mid : na, color=bbcolor, linewidth=2, editable=false, transp=0)
+plot(display_bb ? bb_low : na, color=bbcolor, linewidth=2,editable=false, transp=0)
+//
+
+//ALMA Crossings
+ma1 = alma(hl2, ma1l, offset, sigma)
+ma2 = alma(hl2, ma2l, offset, sigma)
+ma3 = alma(hl2, ma3l, offset, sigma)
+ma1color = #00FFFF
+ma2color = #DDDD00
+ma3color = #DD00DD
+long = crossover(ma2, ma3)
+short = crossunder(ma2, ma3)
+plot(almaxo ? ma1 : na, title="MA 1", linewidth=2, color=ma1color, editable=true, transp=0)
+plot(almaxo ? ma2 : na, title="MA 2", linewidth=2, color=ma2color, editable=true, transp=0)
+plot(almaxo ? ma3 : na, title="MA 3", linewidth=2, color=ma3color, editable=true, transp=0)
+plotshape(almaxo and short, style=shape.diamond, color=#FF0000, transp=0, editable=false, size=size.tiny)
+plotshape(almaxo and long, style=shape.diamond, color=#00FF00, transp=0, editable=false, size=size.tiny)
+//
+
+//Fib EMAs
+
+ma1_color = #99FFFF
+ma2_color = #7BEBB3
+ma3_color = #61D861
+ma4_color = #87C54A
+ma5_color = #B2B235
+ma6_color = #9F6123
+ma7_color = #8C1515
+ma8_color = #790941
+ma9_color = #660066
+
+plot(display_ma ? ema(close,8) : na, color = ma1_color, linewidth = 2, title='EMA 8', transp=0)
+plot(display_ma ? ema(close,13) : na, color = ma2_color, linewidth = 2, title='EMA 13', transp=0)
+plot(display_ma ? ema(close,21) : na, color = ma3_color, linewidth = 2, title='EMA 21', transp=0)
+plot(display_ma ? ema(close,34) : na, color = ma4_color, linewidth = 2, title='EMA 34', transp=0)
+plot(display_ma ? ema(close,55) : na, color = ma5_color, linewidth = 2, title='EMA 55', transp=0)
+plot(display_ma ? ema(close,89) : na, color = ma6_color, linewidth = 2, title='EMA 89', transp=0)
+plot(display_ma ? ema(close,144) : na, color = ma7_color, linewidth = 2, title='EMA 144', transp=0)
+plot(display_ma ? ema(close,233) : na, color = ma8_color, linewidth = 2, title='EMA 233', transp=0)
+plot(display_ma ? ema(close,377) : na, color = ma9_color, linewidth = 2, title='EMA 377', transp=0)
+
+//
+plot(display_bitmex ? index : na, color = yellow, linewidth = 3, title='XBTUSD', transp=0)
+
+//shortxo = crossunder(ma(close, 50), sma(close,200))
+//longxo = crossover(sma(close, 50), sma(close,200))
+shortxo = crossunder(alma(close, 89, 0.85, 6), alma(close, 377, 0.85, 6))
+longxo = crossover(alma(close, 89, 0.85, 6), alma(close, 377, 0.85, 6))
+//plot(masterxo ? sma(close, 50) : na , title="MA 50", linewidth=2, color=lime, editable=true, transp=0)
+plot(masterxo ? alma(close, 89, 0.85, 6) : na , title="XO ALMA 89", linewidth=2, color=lime, editable=true, transp=0)
+//plot(masterxo ? sma(close, 200) : na, title="MA 200", linewidth=2, color=red, editable=true, transp=0)
+plot(masterxo ? alma(close, 377, 0.85, 6) : na, title="XO ALMA 377", linewidth=2, color=red, editable=true, transp=0)
+plotshape(masterxo and shortxo, style=shape.diamond, color=#FF0000, transp=0, editable=false, size=size.small, title="Death Cross", location=location.top)
+plotshape(masterxo and longxo, style=shape.diamond, color=#00FF00, transp=0, editable=false, size=size.small, title="Golden Cross", location=location.top)
