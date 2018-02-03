@@ -1,0 +1,36 @@
+//@version=3
+study("VWMACD ALMA", precision=0)
+length = input(8, title="Trading Period")
+lengthMA = input(34, title="Base MA Period")
+baseMA = input(false, title="Base uses EMA?(ALMA)", type=bool)
+lensignal = input(21, title="Signal Period")
+price = input(close, title="Price source")
+showhist = input(false, title="Show Histogram?")
+
+offset = 0.85
+sigma = 6
+
+//color codes
+crimson = #DC143C
+forestgreen = #228B22
+darkorange = #FF8C00
+
+//hist = vwmaline - maSignal
+trend = baseMA ? ema(price, lengthMA) : alma(price, lengthMA, offset, sigma)
+vwmacd = vwma(price, length) - trend
+signal = alma(vwmacd, lensignal, offset, sigma)
+hist = vwmacd - signal
+crossing_u = crossover(vwmacd, 0)
+crossing_d = crossunder(vwmacd, 0)
+d_IsAbove = vwmacd >= signal
+d_IsBelow = vwmacd < signal
+d_color = d_IsAbove ? forestgreen : crimson
+color_hist = d_IsBelow and vwmacd >= vwmacd[1] ? maroon : d_IsBelow and vwmacd < vwmacd[1] ? crimson : vwmacd < vwmacd[1] ? forestgreen : lime
+
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(showhist ? hist : na, color=color_hist, style=histogram, linewidth=4, transp=0, title="Histogram", editable=false)
+plot(vwmacd, color=d_color, style=line, linewidth=2, transp=0, title="VWMACD", editable=true)
+plot(signal, color=darkorange, style=line, linewidth=2, transp=0, title="ALMA Signal", editable=true)
+
+//plotshape(crossing_u, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+//plotshape(crossing_d, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
