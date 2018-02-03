@@ -1,0 +1,47 @@
+//@version=2
+study(title="PPO ALMA/KAMA [Yield]", shorttitle="PPO ALMA/KAMA [Yield]", precision=1)
+shortlen = input(8, minval=1, title="Short length")
+longlen = input(34, minval=1, title="Long length")
+signallen= input(34, minval=1, title="Signal length")
+showhist = input(false, type=bool, title="Show Histogram?")
+showxo = input(false, type=bool, title="Show crossings?")
+offset = input(0.85, step=0.05, minval=0, maxval=1)
+sigma = input(6, step=1, minval=1)
+src = close
+
+//KAMA
+erp = 10
+fastMA = 2
+slowMA = longlen
+change = abs(src-src[erp])
+volatility = sum(abs(src - src[1]), erp)
+er = change/volatility
+fastAlpha = (2/(fastMA+1))
+slowAlpha = (2/(slowMA+1))
+sc = pow( er * (fastAlpha - slowAlpha ) + slowAlpha, 2)
+kama = nz(kama[1]) + sc * (src - nz(kama[1]))
+//KAMA
+
+short = alma(src, shortlen, offset, sigma)
+long = kama
+osc = 100 * (short - long) / long
+osc_signal = alma(osc, signallen, offset, sigma)
+osc_hist = osc - osc_signal
+
+forestgreen = #228B22
+crimson = #DC143C
+darkorange = #FF8C00
+
+belowsignal = osc <= osc_signal
+ppocolorh = belowsignal and osc_hist >= osc_hist[1] ? maroon : belowsignal and osc_hist < osc_hist[1] ? crimson : osc_hist < osc_hist[1] ? forestgreen : lime
+osc_color = belowsignal ? crimson : forestgreen
+crossing_u = crossover(osc, osc_signal)
+crossing_d = crossunder(osc, osc_signal)
+
+plot(showhist ? osc_hist : na, color=ppocolorh, style=histogram, linewidth=4, transp=0, editable=false, title="Histogram")
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(osc, color=osc_color, linewidth=2, transp=0, style=line, editable=true, title="PPO")
+plot(osc_signal, color=darkorange, linewidth=2, transp=0, style=line, editable=true, title="PPO Signal")
+
+plotshape(showxo ? crossing_u : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(showxo ? crossing_d : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
