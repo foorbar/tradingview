@@ -1,0 +1,48 @@
+//@version=3
+study("TSI EMA/ALMA", shorttitle="TSI EMA/ALMA", precision=1)
+short = input(title="Short EMA Length", type=integer, defval=8)
+long = input(title="Long ALMA Length", type=integer, defval=34)
+signal = input(title="Signal Length", type=integer, defval=13)
+showhist = input(false, type=bool, title="Show Histogram?")
+shapes = input(false, type=bool, title="Show signal crossings?")
+signalma = input(true, type=bool, title="Signal Fast?(Slow)")
+//recommended Hull values: 4, 9, 16, 25...
+smooth = input(0, title="Hull smooth", minval=0, step=1)
+offset = input(0.85, step=0.05, minval=0.5, title="ALMA Offset")
+sigma = input(6, step=1, minval=1, title="ALMA Sigma")
+
+price = close
+pc = change(price)
+
+hullma(_src, _length)=>
+    _return = wma((2 * wma(_src, _length / 2)) - wma(_src, _length), round(sqrt(_length)))
+
+double_smooth(src, long, short) =>
+    first_smooth = ema(src, long)
+    alma(first_smooth, short, offset, sigma)
+double_smoothed_pc = double_smooth(pc, long, short)
+double_smoothed_abs_pc = double_smooth(abs(pc), long, short)
+
+tsi_line = 100 * (double_smoothed_pc / double_smoothed_abs_pc)
+tsi = smooth > 0 ? hullma(tsi_line, smooth) : tsi_line
+tsi_signal = signalma ? alma(tsi_line, signal, 0.7, 4) : alma(tsi_line, signal, 0.7, 2)
+tsi_hist = tsi_line - tsi_signal
+forestgreen = #228B22
+crimson = #DC143C
+darkorange = #FF8C00
+bbcolor = #F5FFFA
+
+belowsignal = tsi_line <= tsi_signal
+crossing_u = crossover(tsi_line, tsi_signal)
+crossing_d = crossunder(tsi_line, tsi_signal)
+
+tsi_color = belowsignal ? crimson : forestgreen
+tsi_color_hist = belowsignal and tsi_hist >= tsi_hist[1] ? maroon : belowsignal and tsi_hist < tsi_hist[1] ? crimson : tsi_hist < tsi_hist[1] ? forestgreen : lime
+
+plot(showhist ? tsi_hist : na, color=tsi_color_hist, style=histogram, linewidth=4, transp=0, editable=false, title="Histogram")
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(tsi, linewidth=2, transp=0, style=line, editable=true, color=tsi_color, title="TSI")
+plot(tsi_signal, linewidth=2, transp=0, style=line, editable=true, color=darkorange, title="TSI Signal")
+
+plotshape(shapes ? crossing_u : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(shapes ? crossing_d : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
