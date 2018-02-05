@@ -1,5 +1,4 @@
-# tradingview
-tradingview personal indicators
+# Tradingview Personal Indicators
 
 The files in this repository are created by me and provided under the MIT License shown below.
 
