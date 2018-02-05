@@ -1,4 +1,11 @@
 //@version=3
+//The files in this repository are created by me and provided under the MIT License
+//located at https://github.com/yield65/tradingview/blob/master/LICENSE
+//If you find them useful please consider making a donation, thank you.
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: M9MBLWAC4puDxuqs4KfgSa216q1chLuaps
+//contact: bucket@mailbox.org
+
 study(title="PP-VWMA", precision=2)
 shortlen = input(8, minval=1, title="Short Lenght")
 longlen = input(34, minval=1, title="Long Lenght")
